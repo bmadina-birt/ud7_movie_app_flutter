@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "633964334527",
+    "project_id": "moodle-184609",
+    "storage_bucket": "moodle-184609.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:633964334527:android:30021ddce2a294f728650a",
+        "android_client_info": {
+          "package_name": "com.example.ud7_movie_app_flutter"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "633964334527-p4aj9c9hkcddngj1obrdh8b6o4u9lgju.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0iqpT_vi5lKfM5lszx7DQWrMnwwEh2Ow"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "633964334527-p4aj9c9hkcddngj1obrdh8b6o4u9lgju.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
