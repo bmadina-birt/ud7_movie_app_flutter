@@ -1,0 +1,44 @@
+name: Android Debug Release (Tags)
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+jobs:
+  build-android-debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Pub get
+        run: flutter pub get
+
+      - name: Build debug APK (Render URL)
+        run: |
+          flutter build apk --debug \
+            --dart-define=API_BASE_URL=https://movie-app-backend-o85w.onrender.com
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-debug.apk "dist/app-debug-${{ github.ref_name }}.apk"
+
+      - name: Create/Upload GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          files: dist/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
