@@ -2,146 +2,97 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/environment.dart';
 
 class ApiService {
-  final String baseUrl = "https://alluring-laughter-production.up.railway.app";
+  final String baseUrl = apiBaseUrl;
 
   Future<String?> _getToken() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
     return prefs.getString("jwt_token");
   }
 
-  // Método GET con mejor manejo de errores
+  Map<String, String> _headers(String? token) {
+    final headers = <String, String>{
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    };
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    return headers;
+  }
+
   Future<http.Response> get(String path) async {
     try {
       final token = await _getToken();
-      if (token == null) {
-        throw Exception("No se ha encontrado el token JWT");
-      }
-      
-      final headers = {
-        "Authorization": "Bearer $token",
-        "Content-Type": "application/json",
-      };
-      
-      debugPrint("GET Request: $baseUrl$path");
-      
-      final response = await http.get(
-        Uri.parse("$baseUrl$path"),
-        headers: headers,
-      );
-      
-      debugPrint("GET Response status: ${response.statusCode}");
-      if (response.body.length < 1000) {
-        debugPrint("GET Response body: ${response.body}");
-      }
-      
+      final uri = Uri.parse("$baseUrl$path");
+      final headers = _headers(token);
+
+      debugPrint("GET $uri");
+      final response = await http.get(uri, headers: headers);
+      _logSmallBody("GET", response);
       return response;
     } catch (e) {
-      debugPrint("Error en GET request: $e");
+      debugPrint("Error GET $path: $e");
       rethrow;
     }
   }
 
-  // Método POST con mejor manejo de errores
   Future<http.Response> post(String path, Map<String, dynamic> body) async {
     try {
       final token = await _getToken();
-      if (token == null) {
-        throw Exception("No se ha encontrado el token JWT");
-      }
-      
+      final uri = Uri.parse("$baseUrl$path");
+      final headers = _headers(token);
       final encodedBody = jsonEncode(body);
-      final headers = {
-        "Authorization": "Bearer $token",
-        "Content-Type": "application/json",
-      };
-      
-      debugPrint("POST Request: $baseUrl$path");
-      debugPrint("POST Body: $encodedBody");
-      
-      final response = await http.post(
-        Uri.parse("$baseUrl$path"),
-        headers: headers,
-        body: encodedBody,
-      );
-      
-      debugPrint("POST Response status: ${response.statusCode}");
-      if (response.body.length < 1000) {
-        debugPrint("POST Response body: ${response.body}");
-      }
-      
+
+      debugPrint("POST $uri body=$encodedBody");
+      final response = await http.post(uri, headers: headers, body: encodedBody);
+      _logSmallBody("POST", response);
       return response;
     } catch (e) {
-      debugPrint("Error en POST request: $e");
+      debugPrint("Error POST $path: $e");
       rethrow;
     }
   }
 
-  // Método PUT con mejor manejo de errores
   Future<http.Response> put(String path, Map<String, dynamic> body) async {
     try {
       final token = await _getToken();
-      if (token == null) {
-        throw Exception("No se ha encontrado el token JWT");
-      }
-      
+      final uri = Uri.parse("$baseUrl$path");
+      final headers = _headers(token);
       final encodedBody = jsonEncode(body);
-      final headers = {
-        "Authorization": "Bearer $token",
-        "Content-Type": "application/json",
-      };
-      
-      debugPrint("PUT Request: $baseUrl$path");
-      debugPrint("PUT Body: $encodedBody");
-      
-      final response = await http.put(
-        Uri.parse("$baseUrl$path"),
-        headers: headers,
-        body: encodedBody,
-      );
-      
-      debugPrint("PUT Response status: ${response.statusCode}");
-      if (response.body.length < 1000) {
-        debugPrint("PUT Response body: ${response.body}");
-      }
-      
+
+      debugPrint("PUT $uri body=$encodedBody");
+      final response = await http.put(uri, headers: headers, body: encodedBody);
+      _logSmallBody("PUT", response);
       return response;
     } catch (e) {
-      debugPrint("Error en PUT request: $e");
+      debugPrint("Error PUT $path: $e");
       rethrow;
     }
   }
 
-  // Método DELETE con mejor manejo de errores
   Future<http.Response> delete(String path) async {
     try {
       final token = await _getToken();
-      if (token == null) {
-        throw Exception("No se ha encontrado el token JWT");
-      }
-      
-      final headers = {
-        "Authorization": "Bearer $token",
-        "Content-Type": "application/json",
-      };
-      
-      debugPrint("DELETE Request: $baseUrl$path");
-      
-      final response = await http.delete(
-        Uri.parse("$baseUrl$path"),
-        headers: headers,
-      );
-      
-      debugPrint("DELETE Response status: ${response.statusCode}");
-      if (response.body.length < 1000) {
-        debugPrint("DELETE Response body: ${response.body}");
-      }
-      
+      final uri = Uri.parse("$baseUrl$path");
+      final headers = _headers(token);
+
+      debugPrint("DELETE $uri");
+      final response = await http.delete(uri, headers: headers);
+      _logSmallBody("DELETE", response);
       return response;
     } catch (e) {
-      debugPrint("Error en DELETE request: $e");
+      debugPrint("Error DELETE $path: $e");
       rethrow;
+    }
+  }
+
+  void _logSmallBody(String method, http.Response r) {
+    debugPrint("$method status: ${r.statusCode}");
+    if (r.body.isNotEmpty && r.body.length < 1500) {
+      debugPrint("$method body: ${r.body}");
     }
   }
 }

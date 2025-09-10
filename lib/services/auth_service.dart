@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/environment.dart';
 
 class AuthService {
-  // URL base configurable para desarrollo vs producción
-  final String baseUrl = "https://alluring-laughter-production.up.railway.app";
+  final String baseUrl = apiBaseUrl;
 
   Future<bool> login(String email, String password) async {
     try {
@@ -15,17 +15,15 @@ class AuthService {
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"email": email, "password": password}),
       );
-      
+
       debugPrint("Status code: ${response.statusCode}");
-      debugPrint("Response body: ${response.body}");
-      
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        // El token viene en data['token']
+        final prefs = await SharedPreferences.getInstance();
         await prefs.setString("jwt_token", data['token']);
         return true;
       }
+      debugPrint("Login fallido: ${response.body}");
       return false;
     } catch (e) {
       debugPrint("Error en login: $e");
@@ -35,25 +33,21 @@ class AuthService {
 
   Future<bool> register(String email, String password) async {
     try {
-      // Generar nombreUsuario a partir del email (parte antes del @)
-      String nombreUsuario = email.split('@')[0];
-      
-      debugPrint("Intentando registro con: email=$email, nombreUsuario=$nombreUsuario");
-      
+      final nombreUsuario = email.split('@').first;
       final response = await http.post(
         Uri.parse("$baseUrl/api/usuarios/registro"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "nombreUsuario": nombreUsuario,
           "email": email,
-          "password": password
+          "password": password,
+          "nombreUsuario": nombreUsuario,
         }),
       );
-      
-      debugPrint("Status code: ${response.statusCode}");
-      debugPrint("Response body: ${response.body}");
-      
-      return response.statusCode == 200 || response.statusCode == 201;
+
+      debugPrint("Registro status: ${response.statusCode}");
+      if (response.statusCode == 200 || response.statusCode == 201) return true;
+      debugPrint("Registro fallido: ${response.body}");
+      return false;
     } catch (e) {
       debugPrint("Error en registro: $e");
       return false;
@@ -61,40 +55,39 @@ class AuthService {
   }
 
   Future<void> logout() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
     await prefs.remove("jwt_token");
   }
-  
+
   Future<String?> getToken() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
     return prefs.getString("jwt_token");
   }
 
   Future<bool> isLoggedIn() async {
-    String? token = await getToken();
+    final token = await getToken();
     return token != null;
   }
 
-  // Obtener el ID del usuario actual
   Future<int?> getUserId() async {
     try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? token = prefs.getString("jwt_token");
-      
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString("jwt_token");
       if (token == null) return null;
-      
+
       final response = await http.get(
         Uri.parse("$baseUrl/api/usuarios/perfil"),
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $token"
+          "Accept": "application/json",
+          "Authorization": "Bearer $token",
         },
       );
-      
+
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['id'] as int?;
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return (data['id'] as num).toInt();
       }
+      debugPrint("Perfil fallido: ${response.statusCode} ${response.body}");
       return null;
     } catch (e) {
       debugPrint("Error obteniendo ID de usuario: $e");
