@@ -1,0 +1,60 @@
+name: Generar APK para la clase
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release-${{ github.ref }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Android SDK (acepta licencias e instala NDK requerido)
+        uses: android-actions/setup-android@v3
+        with:
+          packages: |
+            platforms;android-34
+            build-tools;34.0.0
+            platform-tools
+            ndk;29.0.13113456
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Dependencias
+        run: flutter pub get
+
+      - name: Construir APK (backend Render)
+        run: |
+          flutter build apk --release \
+            --android-skip-build-dependency-validation \
+            --dart-define=API_BASE_URL=https://movie-app-backend-o85w.onrender.com
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk "dist/app-release-${{ github.ref_name }}.apk"
+
+      - name: Publicar en GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          files: dist/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
