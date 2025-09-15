@@ -11,9 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    concurrency:
-      group: release-${{ github.ref }}
-      cancel-in-progress: true
 
     steps:
       - name: Clonar el repositorio
@@ -30,17 +27,22 @@ jobs:
         with:
           channel: stable
 
-      - name: Aceptar licencias e instalar SDK/NDK requeridos
+      - name: Aceptar licencias Android (solo aquí)
         shell: bash
         run: |
           SDKMANAGER="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
           yes | "$SDKMANAGER" --licenses || true
-          yes | "$SDKMANAGER" "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;29.0.13113456"
+
+      - name: Instalar SDK/NDK requeridos (sin yes)
+        shell: bash
+        run: |
+          SDKMANAGER="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+          "$SDKMANAGER" --install "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;29.0.13113456"
 
       - name: Dependencias
         run: flutter pub get
 
-      - name: Construir APK (backend Render)
+      - name: Construir APK
         run: |
           flutter build apk --release \
             --android-skip-build-dependency-validation \
